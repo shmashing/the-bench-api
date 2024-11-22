@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheBench.Api", "TheBench.Api\TheBench.Api.csproj", "{6AB72820-FF5D-4500-8FBB-DA967BC51D5E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheBench.Logic", "TheBench.Logic\TheBench.Logic.csproj", "{6384F6AF-FC94-4B32-9D8F-70FA12AB528C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{6AB72820-FF5D-4500-8FBB-DA967BC51D5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6AB72820-FF5D-4500-8FBB-DA967BC51D5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6AB72820-FF5D-4500-8FBB-DA967BC51D5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6384F6AF-FC94-4B32-9D8F-70FA12AB528C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6384F6AF-FC94-4B32-9D8F-70FA12AB528C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6384F6AF-FC94-4B32-9D8F-70FA12AB528C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6384F6AF-FC94-4B32-9D8F-70FA12AB528C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
