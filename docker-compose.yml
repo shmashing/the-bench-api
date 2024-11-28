@@ -1,0 +1,9 @@
+services:
+  the_bench_db:
+    image: postgres:16.6-alpine
+    environment:
+      - POSTGRES_DB=TheBenchDB
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker_pw
+    ports:
+      - 5432:5432
