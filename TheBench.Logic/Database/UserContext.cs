@@ -12,7 +12,6 @@ public class UserContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         var connectionString = BuildConnectionString();
-        Console.WriteLine($"Using connection string '{connectionString}'");
         optionsBuilder.UseNpgsql(connectionString);
         base.OnConfiguring(optionsBuilder);
     }
