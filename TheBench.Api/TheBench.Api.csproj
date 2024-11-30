@@ -14,4 +14,8 @@
     <ProjectReference Include="..\TheBench.Logic\TheBench.Logic.csproj" />
   </ItemGroup>
 
+  <Target Name="PrePublishTarget" AfterTargets="Publish">
+    <Exec Command="dotnet ef database update" />
+  </Target>
+
 </Project>

@@ -21,10 +21,18 @@ public class UserController(UserService userService) : Controller
     [Route("{id}")]
     public async Task<IActionResult> Details(string id)
     {
-        var user = await UserService.GetUserById(id);
-        if (user == null) return NotFound();
-        
-        return Ok(user);
+        try
+        {
+            var user = await UserService.GetUserById(id);
+            if (user == null) return NotFound();
+                    
+            return Ok(user);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error retrieving user details: ${e.Message}");
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpPost]
@@ -39,6 +47,5 @@ public class UserController(UserService userService) : Controller
         {
             return StatusCode(500, ex.Message);
         }
-
     }
 }
