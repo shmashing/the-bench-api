@@ -1,6 +1,6 @@
 @TheBench_HostAddress = http://localhost:5126
 
-GET {{TheBench_HostAddress}}/weatherforecast/
-Accept: application/json
 
+GET {{TheBench_HostAddress}}/api/v1/user/9
+Accept: application/json
 ###
