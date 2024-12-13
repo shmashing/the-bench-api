@@ -15,9 +15,11 @@ builder.Services.AddControllers()
     });
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", builder =>
+    options.AddPolicy("AllowFrontend", config =>
     {
-        builder.WithOrigins("http://localhost:3000")
+        config.WithOrigins(
+                "http://localhost:3000", 
+                "https://the-bench-ui-185160f67ef3.herokuapp.com/")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
