@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
 using TheBench.Logic.Database;
 using TheBench.Logic.Models;
 
@@ -5,6 +7,7 @@ namespace TheBench.Logic.Adapters;
 
 public class UserAdapter(UserContext userContext) : IUserAdapter
 {
+    private static readonly Regex StripWhitespace = new Regex(@"\s+");
     public void SeedDatabase()
     {
         if (userContext.Users.Any()) return;
@@ -39,17 +42,45 @@ public class UserAdapter(UserContext userContext) : IUserAdapter
 
     public async Task<User?> GetUser(string id)
     {
-        var user = await userContext.Users.FindAsync(id);
+        if (!id.Contains("user_"))
+        {
+            var name = StripWhitespace.Replace(id, "");
+            return await userContext.Users.FirstOrDefaultAsync(
+                u => (u.FirstName + u.LastName).ToLower() == name.ToLower()
+                );
+        }
         
+        var user = await userContext.Users.FindAsync(id);
         return user;
     }
 
     public async Task<User> CreateUser(User user)
     {
+        if (await userContext.Users.AnyAsync(u => u.Email == user.Email && u.PhoneNumber == user.PhoneNumber))
+        {
+            Console.WriteLine("User with this email or phone number already exists.");
+            return user;
+        }
+        
         await userContext.Users.AddAsync(user);
         await userContext.SaveChangesAsync();
         
         return (await userContext.Users.FindAsync(user.Id))!;
+    }
+
+    public List<User> FindUsers(UserQuery query)
+    {
+        var dayTime = new DailyAvailability(query.Day, query.TimeWindow, Availability.Available);
+
+        var usersQuery = userContext.Users
+            .AsEnumerable()
+            .ToArray();
+        
+        var resultSet = usersQuery
+            .Where(u => u.Sports.Contains(query.Sport))
+            .Where(u => u.Schedule.DailyAvailability.Contains(dayTime));
+        
+        return resultSet.ToList();
     }
 
     private static Schedule GenerateSchedule()

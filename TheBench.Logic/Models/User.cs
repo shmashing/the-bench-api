@@ -8,6 +8,6 @@ public record User(
     string PhoneNumber,
     string Location,
     
-    Schedule? Schedule,
+    Schedule Schedule,
     List<Sport> Sports
     );

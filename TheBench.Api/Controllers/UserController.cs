@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TheBench.Api.Models;
 using TheBench.Logic.Models;
 using TheBench.Logic.Services;
 
@@ -25,8 +26,10 @@ public class UserController(UserService userService) : Controller
         {
             var user = await UserService.GetUserById(id);
             if (user == null) return NotFound();
-                    
-            return Ok(user);
+
+            var userDto = new UserDto(user);
+            
+            return Ok(userDto);
         }
         catch (Exception e)
         {
@@ -36,15 +39,19 @@ public class UserController(UserService userService) : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] User user)
+    public async Task<IActionResult> Post([FromBody] AuthenticatedUser authenticatedUser)
     {
+        Console.WriteLine($"Received POST request: {authenticatedUser}");
         try
         {
-            var newUser = await UserService.CreateUser(user);
-            return Ok(newUser);
+            var newUser = await UserService.CreateUser(authenticatedUser);
+            var userDto = new UserDto(newUser);
+            Console.WriteLine($"New user created: {userDto.Name} - {userDto.Id}");
+            return Ok(userDto);
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Error creating new user: {ex.Message}\n{ex.StackTrace}");
             return StatusCode(500, ex.Message);
         }
     }

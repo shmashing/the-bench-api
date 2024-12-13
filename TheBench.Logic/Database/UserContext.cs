@@ -22,7 +22,7 @@ public class UserContext : DbContext
         {
             u.Property(p => p.Schedule).HasConversion(
                 s => JsonSerializer.Serialize(s, JsonSerializerOptions.Default),
-                s => JsonSerializer.Deserialize<Schedule>(s, JsonSerializerOptions.Default));
+                s => JsonSerializer.Deserialize<Schedule>(s, JsonSerializerOptions.Default) ?? Schedule.FullAvailability());
         });
 
         
@@ -38,6 +38,5 @@ public class UserContext : DbContext
         
         var match = Regex.Match(databaseUrl, @"postgres://(.*):(.*)@(.*):(.*)/(.*)");
         return $"Server={match.Groups[3]};Port={match.Groups[4]};User Id={match.Groups[1]};Password={match.Groups[2]};Database={match.Groups[5]};sslmode=Prefer;Trust Server Certificate=true";
-
     }
 }
