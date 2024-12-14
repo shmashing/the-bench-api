@@ -7,4 +7,5 @@ public interface IUserAdapter
     public void SeedDatabase();
     public Task<User?> GetUser(string id);
     public Task<User> CreateUser(User user);
+    public List<User> FindUsers(UserQuery query);
 }
