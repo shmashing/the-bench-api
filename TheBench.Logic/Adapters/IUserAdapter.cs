@@ -4,8 +4,7 @@ namespace TheBench.Logic.Adapters;
 
 public interface IUserAdapter
 {
-    public void SeedDatabase();
-    public Task<User?> GetUser(string id);
-    public Task<User> CreateUser(User user);
-    public List<User> FindUsers(UserQuery query);
+    public Task<UserProfile> CreateUserProfile(UserProfile userProfile);
+    public List<UserProfile> FindUsers(UserQuery query);
+    public Task<UserProfile?> GetUserProfile(string userId);
 }

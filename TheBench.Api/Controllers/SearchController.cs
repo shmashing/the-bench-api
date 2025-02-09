@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using TheBench.Api.Models;
 using TheBench.Logic.Models;
 using TheBench.Logic.Services;
 
@@ -14,10 +13,9 @@ public class SearchController(SearchService searchService) : Controller
     {
         try
         {
-            var users = searchService.FindUsers(sport, day, time);
-            var userDtos = users.ConvertAll(u => new UserDto(u));
+            var userProfiles = searchService.FindUsers(sport, day, time);
             
-            return Ok(userDtos);
+            return Ok(userProfiles);
         }
         catch (Exception ex)
         {

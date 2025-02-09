@@ -5,7 +5,7 @@ namespace TheBench.Logic.Services;
 
 public class SearchService(IUserAdapter userAdapter)
 {
-    public List<User> FindUsers(string sport, string day, string time)
+    public List<UserProfile> FindUsers(string sport, string day, string time)
     {
         Console.WriteLine($"Searching for {sport} players for {day} at {time}");
         if (string.IsNullOrWhiteSpace(sport) || !Enum.TryParse(sport, out Sport sportEnum))

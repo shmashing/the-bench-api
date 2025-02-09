@@ -28,7 +28,7 @@ builder.Services.AddScoped<IUserAdapter, UserAdapter>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<IdService>();
-
+Console.WriteLine("Services registered");
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

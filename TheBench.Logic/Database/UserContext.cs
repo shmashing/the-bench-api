@@ -7,7 +7,7 @@ namespace TheBench.Logic.Database;
 
 public class UserContext : DbContext
 {
-    public DbSet<User> Users { get; set; }
+    public DbSet<UserProfile> UserProfiles { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -18,8 +18,9 @@ public class UserContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>(u =>
+        modelBuilder.Entity<UserProfile>(u =>
         {
+            u.HasIndex(p => p.UserId);
             u.Property(p => p.Schedule).HasConversion(
                 s => JsonSerializer.Serialize(s, JsonSerializerOptions.Default),
                 s => JsonSerializer.Deserialize<Schedule>(s, JsonSerializerOptions.Default) ?? Schedule.FullAvailability());
