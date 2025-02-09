@@ -17,7 +17,7 @@ public class UserService(IUserAdapter userAdapter, IdService idService)
         return await userAdapter.CreateUserProfile(userProfile);
     }
 
-    public async Task<UserProfile> GetUserProfile(string userId)
+    public async Task<UserProfile?> GetUserProfile(string userId)
     {
         return await userAdapter.GetUserProfile(userId);
     }

@@ -31,6 +31,9 @@ public class ProfileController(UserService userService) : Controller
         try
         {
             var userProfile = await userService.GetUserProfile(userId);
+            
+            if (userProfile == null) return NotFound();
+            
             return Ok(userProfile);
         }
         catch (Exception ex)
