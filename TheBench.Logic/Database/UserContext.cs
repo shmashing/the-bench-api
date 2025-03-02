@@ -20,12 +20,11 @@ public class UserContext : DbContext
     {
         modelBuilder.Entity<UserProfile>(u =>
         {
-            u.HasIndex(p => p.UserId);
+            u.HasIndex(p => p.UserId).IsUnique();
             u.Property(p => p.Schedule).HasConversion(
                 s => JsonSerializer.Serialize(s, JsonSerializerOptions.Default),
                 s => JsonSerializer.Deserialize<Schedule>(s, JsonSerializerOptions.Default) ?? Schedule.FullAvailability());
         });
-
         
         base.OnModelCreating(modelBuilder);
     }
