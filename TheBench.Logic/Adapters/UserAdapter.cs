@@ -37,7 +37,7 @@ public class UserAdapter(UserContext userContext) : IUserAdapter
 
     public async Task<UserProfile> UpdateAvailability(string userId, List<DailyAvailability> updatedDailyAvailabilities)
     {
-        var userProfile = await userContext.UserProfiles.FirstOrDefaultAsync(u => u.UserId == userId);
+        var userProfile = await userContext.UserProfiles.FirstOrDefaultAsync(u => u.Id == userId);
         if (userProfile == null)
         {
             throw new Exception("User not found");
