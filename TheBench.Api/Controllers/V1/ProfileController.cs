@@ -42,4 +42,19 @@ public class ProfileController(UserService userService) : Controller
             return StatusCode(500, ex.Message);
         }
     }
+    
+    [HttpPost("{userId}/availability/update")]
+    public async Task<IActionResult> UpdateAvailability(string userId, [FromBody] List<DailyAvailability> updatedDailyAvailabilities)
+    {
+        try
+        {
+            var updatedProfile = await userService.UpdateAvailability(userId, updatedDailyAvailabilities);
+            return Ok(updatedProfile);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating user availability: {ex.Message}\n{ex.StackTrace}");
+            return StatusCode(500, ex.Message);
+        }
+    }
 }

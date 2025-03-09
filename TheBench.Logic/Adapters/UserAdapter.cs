@@ -34,4 +34,23 @@ public class UserAdapter(UserContext userContext) : IUserAdapter
         return await userContext.UserProfiles
             .FirstOrDefaultAsync(u => u.UserId == userId);
     }
+
+    public async Task<UserProfile> UpdateAvailability(string userId, List<DailyAvailability> updatedDailyAvailabilities)
+    {
+        var userProfile = await userContext.UserProfiles.FirstOrDefaultAsync(u => u.UserId == userId);
+        if (userProfile == null)
+        {
+            throw new Exception("User not found");
+        }
+        
+        updatedDailyAvailabilities.ForEach(availability =>
+        {
+            userProfile.Schedule.DailyAvailability
+                .RemoveAll(d => d.Day == availability.Day && d.TimeWindow == availability.TimeWindow);
+            userProfile.Schedule.DailyAvailability.Add(availability);
+        });
+        
+        await userContext.SaveChangesAsync();
+        return userProfile;
+    }
 }

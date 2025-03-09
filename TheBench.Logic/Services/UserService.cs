@@ -24,6 +24,12 @@ public class UserService(IUserAdapter userAdapter, IdService idService)
         var userProfile = await userAdapter.GetUserProfile(userId);
         return userProfile == null ? null : GetUserProfileResponse(userProfile);
     }
+    
+    public async Task<UserProfileResponse> UpdateAvailability(string userId, List<DailyAvailability> updatedDailyAvailabilities)
+    {
+        var updatedProfile = await userAdapter.UpdateAvailability(userId, updatedDailyAvailabilities);
+        return GetUserProfileResponse(updatedProfile);
+    }
 
     private static UserProfileResponse GetUserProfileResponse(UserProfile userProfile)
     {

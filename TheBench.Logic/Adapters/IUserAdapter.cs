@@ -7,4 +7,5 @@ public interface IUserAdapter
     public Task<UserProfile> CreateUserProfile(UserProfile userProfile);
     public List<UserProfile> FindUsers(UserQuery query);
     public Task<UserProfile?> GetUserProfile(string userId);
+    public Task<UserProfile> UpdateAvailability(string userId, List<DailyAvailability> updatedDailyAvailabilities);
 }
