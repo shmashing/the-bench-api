@@ -45,8 +45,10 @@ public class UserAdapter(UserContext userContext) : IUserAdapter
         
         updatedDailyAvailabilities.ForEach(availability =>
         {
-            userProfile.Schedule.DailyAvailability
+            var removedRows = userProfile.Schedule.DailyAvailability
                 .RemoveAll(d => d.Day == availability.Day && d.TimeWindow == availability.TimeWindow);
+            
+            Console.WriteLine("Removed rows: " + removedRows);
             userProfile.Schedule.DailyAvailability.Add(availability);
         });
         
