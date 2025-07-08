@@ -52,6 +52,8 @@ public class UserAdapter(UserContext userContext) : IUserAdapter
             userProfile.Schedule.DailyAvailability.Add(availability);
         });
         
+        userProfile.Schedule.DailyAvailability.AddRange(updatedDailyAvailabilities);
+        
         await userContext.SaveChangesAsync();
         return userProfile;
     }

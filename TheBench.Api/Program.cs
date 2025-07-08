@@ -24,9 +24,13 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<UserContext>();
+builder.Services.AddDbContext<TeamContext>();
 builder.Services.AddScoped<IUserAdapter, UserAdapter>();
+builder.Services.AddScoped<ITeamAdapter, TeamAdapter>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<SearchService>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<IdService>();
 
 var app = builder.Build();
