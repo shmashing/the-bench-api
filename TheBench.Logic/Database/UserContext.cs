@@ -8,6 +8,8 @@ namespace TheBench.Logic.Database;
 public class UserContext : DbContext
 {
     public DbSet<UserProfile> UserProfiles { get; set; }
+    public DbSet<Team> Teams { get; set; }
+    public DbSet<TeamInvitation> TeamInvitations { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -24,6 +26,24 @@ public class UserContext : DbContext
             u.Property(p => p.Schedule).HasConversion(
                 s => JsonSerializer.Serialize(s, JsonSerializerOptions.Default),
                 s => JsonSerializer.Deserialize<Schedule>(s, JsonSerializerOptions.Default) ?? Schedule.FullAvailability());
+        });
+        
+        modelBuilder.Entity<Team>(team =>
+        {
+            team.HasKey(t => t.Id);
+            team.Property(t => t.ManagerIds).HasConversion(
+                list => JsonSerializer.Serialize(list, JsonSerializerOptions.Default),
+                json => JsonSerializer.Deserialize<List<string>>(json, JsonSerializerOptions.Default) ?? new List<string>());
+            
+            team.Property(t => t.MemberIds).HasConversion(
+                list => JsonSerializer.Serialize(list, JsonSerializerOptions.Default),
+                json => JsonSerializer.Deserialize<List<string>>(json, JsonSerializerOptions.Default) ?? new List<string>());
+        });
+        
+        modelBuilder.Entity<TeamInvitation>(invite =>
+        {
+            invite.HasKey(i => i.Id);
+            invite.HasIndex(i => new { i.TeamId, i.InviteeEmail }).IsUnique();
         });
         
         base.OnModelCreating(modelBuilder);

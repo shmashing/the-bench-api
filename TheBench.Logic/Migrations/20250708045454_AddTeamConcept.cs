@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace TheBench.Logic.Migrations.Team
+namespace TheBench.Logic.Migrations
 {
     /// <inheritdoc />
     public partial class AddTeamConcept : Migration

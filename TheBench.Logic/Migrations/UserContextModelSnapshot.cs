@@ -21,6 +21,60 @@ namespace TheBench.Logic.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("TheBench.Logic.Models.Team", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FounderId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ManagerIds")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MemberIds")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Teams");
+                });
+
+            modelBuilder.Entity("TheBench.Logic.Models.TeamInvitation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InviteeEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InviterId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsAccepted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TeamId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeamId", "InviteeEmail")
+                        .IsUnique();
+
+                    b.ToTable("TeamInvitations");
+                });
+
             modelBuilder.Entity("TheBench.Logic.Models.UserProfile", b =>
                 {
                     b.Property<string>("Id")

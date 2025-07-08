@@ -4,7 +4,7 @@ using TheBench.Logic.Models;
 
 namespace TheBench.Logic.Adapters;
 
-public class TeamAdapter(TeamContext teamContext) : ITeamAdapter
+public class TeamAdapter(UserContext teamContext) : ITeamAdapter
 {
     public async Task<Team> CreateTeam(Team team)
     {

@@ -8,10 +8,10 @@ using TheBench.Logic.Database;
 
 #nullable disable
 
-namespace TheBench.Logic.Migrations.Team
+namespace TheBench.Logic.Migrations
 {
-    [DbContext(typeof(TeamContext))]
-    [Migration("20250607002024_AddTeamConcept")]
+    [DbContext(typeof(UserContext))]
+    [Migration("20250708045454_AddTeamConcept")]
     partial class AddTeamConcept
     {
         /// <inheritdoc />
@@ -76,6 +76,38 @@ namespace TheBench.Logic.Migrations.Team
                         .IsUnique();
 
                     b.ToTable("TeamInvitations");
+                });
+
+            modelBuilder.Entity("TheBench.Logic.Models.UserProfile", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Schedule")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.PrimitiveCollection<int[]>("Sports")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserProfiles");
                 });
 #pragma warning restore 612, 618
         }

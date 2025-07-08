@@ -24,7 +24,6 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<UserContext>();
-builder.Services.AddDbContext<TeamContext>();
 builder.Services.AddScoped<IUserAdapter, UserAdapter>();
 builder.Services.AddScoped<ITeamAdapter, TeamAdapter>();
 builder.Services.AddScoped<UserService>();
