@@ -20,9 +20,8 @@ public class TeamAdapter(UserContext teamContext) : ITeamAdapter
 
     public async Task<List<Team>> GetTeamsByMember(string userId)
     {
-        return await teamContext.Teams
-            .Where(t => t.MemberIds.Contains(userId))
-            .ToListAsync();
+        var teams = await teamContext.Teams.ToListAsync();
+        return teams.Where(t => t.ManagerIds.Contains(userId)).ToList();
     }
 
     public async Task<List<Team>> GetTeamsByManager(string userId)
