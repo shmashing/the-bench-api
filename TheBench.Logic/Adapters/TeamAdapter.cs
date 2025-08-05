@@ -18,6 +18,12 @@ public class TeamAdapter(UserContext teamContext) : ITeamAdapter
         return await teamContext.Teams.FindAsync(teamId);
     }
 
+    public Task<bool> DeleteTeam(Team team)
+    {
+        teamContext.Teams.Remove(team);
+        return teamContext.SaveChangesAsync().ContinueWith(t => t.Result > 0);
+    }
+
     public async Task<List<Team>> GetTeamsByMember(string userId)
     {
         var teams = await teamContext.Teams.ToListAsync();
@@ -107,11 +113,12 @@ public class TeamAdapter(UserContext teamContext) : ITeamAdapter
         return true;
     }
 
-    public async Task<TeamInvitation> CreateTeamInvitation(TeamInvitation invitation)
+    public async Task<List<TeamInvitation>> CreateTeamInvitations(List<TeamInvitation> invitations)
     {
-        teamContext.TeamInvitations.Add(invitation);
+        teamContext.TeamInvitations.AddRange(invitations);
         await teamContext.SaveChangesAsync();
-        return invitation;
+        
+        return invitations;
     }
 
     public async Task<TeamInvitation?> GetTeamInvitation(string invitationId)

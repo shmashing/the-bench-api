@@ -14,47 +14,34 @@ public class UserAdapter(UserContext userContext) : IUserAdapter
         return userProfile;
     }
 
-    public List<UserProfile> FindUsers(UserQuery query)
+    public async Task<List<UserProfile>> GetUsers(List<string> userIds)
     {
-        var dayTime = new DailyAvailability(query.Day, query.TimeWindow, Availability.Available);
-
-        var usersQuery = userContext.UserProfiles
-            .AsEnumerable()
-            .ToArray();
-        
-        var resultSet = usersQuery
-            .Where(u => u.Sports.Contains(query.Sport))
-            .Where(u => u.Schedule.DailyAvailability.Contains(dayTime));
-        
-        return resultSet.ToList();
+        var users = await userContext.UserProfiles.ToListAsync();
+        return users.Where(u => userIds.Contains(u.Id)).ToList();
     }
     
     public async Task<UserProfile?> GetUserProfile(string userId)
     {
         return await userContext.UserProfiles
-            .FirstOrDefaultAsync(u => u.UserId == userId);
+            .FirstOrDefaultAsync(u => u.Id == userId);
+    }
+    
+    public async Task<UserProfile?> GetUserProfileByAuthId(string authId)
+    {
+        return await userContext.UserProfiles
+            .FirstOrDefaultAsync(u => u.Auth0Id == authId);
     }
 
-    public async Task<UserProfile> UpdateAvailability(string userId, List<DailyAvailability> updatedDailyAvailabilities)
+    public async Task<List<UserProfile>> FindUsers(string searchTerm)
     {
-        var userProfile = await userContext.UserProfiles.FirstOrDefaultAsync(u => u.Id == userId);
-        if (userProfile == null)
-        {
-            throw new Exception("User not found");
-        }
+        var users = await userContext.UserProfiles.ToListAsync();
         
-        updatedDailyAvailabilities.ForEach(availability =>
-        {
-            var removedRows = userProfile.Schedule.DailyAvailability
-                .RemoveAll(d => d.Day == availability.Day && d.TimeWindow == availability.TimeWindow);
-            
-            Console.WriteLine("Removed rows: " + removedRows);
-            userProfile.Schedule.DailyAvailability.Add(availability);
-        });
-        
-        userProfile.Schedule.DailyAvailability.AddRange(updatedDailyAvailabilities);
-        
-        await userContext.SaveChangesAsync();
-        return userProfile;
+        return users
+            .Where(u => 
+                u.FirstName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                u.LastName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                Regex.IsMatch(u.Email, $"^{Regex.Escape(searchTerm)}", RegexOptions.IgnoreCase))
+            .ToList();
     }
 }

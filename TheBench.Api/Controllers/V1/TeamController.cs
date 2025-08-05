@@ -1,19 +1,45 @@
 using Microsoft.AspNetCore.Mvc;
 using TheBench.Logic.Requests.V1;
+using TheBench.Logic.Responses;
 using TheBench.Logic.Services;
 
 namespace TheBench.Api.Controllers.V1;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class TeamController(TeamService teamService) : Controller
+public class TeamController(TeamService teamService, GameService gameService) : Controller
 {
     [HttpPost]
     public async Task<IActionResult> CreateTeam([FromBody] CreateTeamRequest request)
     {
         try
         {
-            var team = await teamService.CreateTeam(request.ManagerId, request.TeamName);
+            Console.WriteLine(request.Sport.ToString());
+            var team = await teamService.CreateTeam(
+                request.ManagerId, 
+                request.TeamName,
+                request.Sport,
+                request.Description,
+                request.Logo
+                );
+            return Ok(team);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpGet("{teamId}")]
+    public async Task<IActionResult> GetTeamById(string teamId)
+    {
+        try
+        {
+            var team = await teamService.GetTeamById(teamId);
+            if (team == null)
+            {
+                return NotFound("Team not found");
+            }
             return Ok(team);
         }
         catch (Exception ex)
@@ -22,6 +48,24 @@ public class TeamController(TeamService teamService) : Controller
         }
     }
     
+    [HttpDelete("{teamId}")]
+    public async Task<IActionResult> DeleteTeam(string teamId)
+    {
+        try
+        {
+            var result = await teamService.DeleteTeam(teamId);
+            if (result)
+            {
+                return Ok("Team deleted successfully");
+            }
+            return NotFound("Team not found");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
+
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetUserTeams(string userId)
     {
@@ -36,27 +80,35 @@ public class TeamController(TeamService teamService) : Controller
         }
     }
     
-    [HttpGet("managed/{userId}")]
-    public async Task<IActionResult> GetManagedTeams(string userId)
+    [HttpPost("{teamId}/invite")]
+    public async Task<IActionResult> InviteToTeam(string teamId, [FromBody] TeamInvitationRequest request)
     {
         try
         {
-            var teams = await teamService.GetManagedTeams(userId);
-            return Ok(teams);
+            var invitation = await teamService.InviteUsersToTeam(teamId, request.InviterId, request.UserEmails);
+            return Ok(invitation);
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex.InnerException.Message);
             return StatusCode(500, ex.Message);
         }
     }
-    
-    [HttpPost("{teamId}/invite")]
-    public async Task<IActionResult> InviteToTeam(string teamId, [FromQuery] string inviterId, [FromBody] TeamInvitationRequest request)
+
+    [HttpGet("{teamId}/games")]
+    public async Task<IActionResult> GetGamesForTeam(string teamId)
     {
         try
         {
-            var invitation = await teamService.InviteUserToTeam(teamId, inviterId, request.InviteeEmail);
-            return Ok(invitation);
+            var games = await gameService.GetGamesForTeam(teamId);
+            var team = await teamService.GetTeamById(teamId);
+            
+            var response = new List<GameResponse>();
+            foreach (var game in games)
+            {
+                response.Add(GameResponse.FromGame(game, team!.Name));
+            }
+            return Ok(response);
         }
         catch (Exception ex)
         {

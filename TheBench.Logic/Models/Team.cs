@@ -5,5 +5,8 @@ public record Team(
     string Name,
     string FounderId,
     List<string> ManagerIds,
-    List<string> MemberIds
+    List<string> MemberIds,
+    Sport Sport,
+    string Description,
+    string? Logo = null
     );

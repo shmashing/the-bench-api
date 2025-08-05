@@ -1,61 +1,110 @@
 using TheBench.Logic.Adapters;
 using TheBench.Logic.Models;
-using TheBench.Logic.Requests.V1;
 using TheBench.Logic.Responses;
 
 namespace TheBench.Logic.Services;
 
 public class TeamService(ITeamAdapter teamAdapter, IUserAdapter userAdapter, NotificationService notificationService)
 {
-    private readonly IdService idService = new();
+    private readonly IUserAdapter _userAdapter = userAdapter;
+    private readonly ITeamAdapter _teamAdapter = teamAdapter;
+    private readonly IdService _idService = new();
     
-    public async Task<TeamResponse> CreateTeam(string founderId, string name)
+    public async Task<TeamResponse> CreateTeam(
+        string founderId, 
+        string name,
+        Sport sport,
+        string description,
+        string? logo = null
+        )
     {
-        var teamId = idService.Generate("team");
-        var team = new Team(teamId, name, founderId, [founderId], [founderId]);
-        var createdTeam = await teamAdapter.CreateTeam(team);
-        return GetTeamResponse(createdTeam);
+        var teamId = _idService.Generate("team");
+        var team = new Team(
+            teamId, 
+            name, 
+            founderId, 
+            [founderId], 
+            [], 
+            sport, 
+            description, 
+            logo
+            );
+        var createdTeam = await _teamAdapter.CreateTeam(team);
+        
+        var managers = await _userAdapter.GetUsers(createdTeam.ManagerIds);
+        var players = await _userAdapter.GetUsers(team.MemberIds);
+        
+        var members = GetTeamMembers(managers, players);        
+        return GetTeamResponse(createdTeam, members);
+    }
+    
+    public async Task<bool> DeleteTeam(string teamId)
+    {
+        var team = await _teamAdapter.GetTeam(teamId);
+        if (team == null) return false;
+
+        // Remove all invitations related to this team
+        var invitations = await _teamAdapter.GetTeamInvitationsByTeam(teamId);
+        foreach (var invitation in invitations)
+        {
+            await _teamAdapter.DeleteInvitation(invitation.Id);
+        }
+
+        // Remove the team itself
+        return await _teamAdapter.DeleteTeam(team);
     }
 
-    public async Task<TeamInvitationResponse> InviteUserToTeam(string teamId, string inviterId, string inviteeEmail)
+    public async Task<TeamResponse?> GetTeamById(string teamId)
+    {
+        var team = await _teamAdapter.GetTeam(teamId);
+
+        if (team == null) return null;
+        
+        var managers = await _userAdapter.GetUsers(team.ManagerIds);
+        var players = await _userAdapter.GetUsers(team.MemberIds);
+        
+        var members = GetTeamMembers(managers, players);        
+        return GetTeamResponse(team, members);
+    }
+
+    public async Task<TeamInvitationResponse> InviteUsersToTeam(string teamId, string inviterId, List<string> inviteeEmails)
     {
         // Verify inviter is authorized to invite users
-        var team = await teamAdapter.GetTeam(teamId);
+        var team = await _teamAdapter.GetTeam(teamId);
         if (team == null) throw new Exception("Team not found");
         if (!team.ManagerIds.Contains(inviterId)) throw new Exception("User is not authorized to invite members to this team");
         
-        var invitationId = idService.Generate("invitation");
-        var invitation = new TeamInvitation(invitationId, teamId, inviterId, inviteeEmail, false);
-        var createdInvitation = await teamAdapter.CreateTeamInvitation(invitation);
+        var invitations = new List<TeamInvitation>();
+        inviteeEmails.ForEach(inviteeEmail =>
+        {
+            var invitationId = _idService.Generate("invitation");
+            var invitation = new TeamInvitation(invitationId, teamId, inviterId, inviteeEmail, false);
+            invitations.Add(invitation);
+        });
+        
+        var createdInvitations = await _teamAdapter.CreateTeamInvitations(invitations);
 
         // Send email notification
-        await notificationService.SendEmail(inviteeEmail, "Team Invitation", 
-            $"You have been invited to join the team: {team.Name}. Click here to accept the invitation.");
+        await notificationService.SendTeamInvites(createdInvitations);
             
-        return new TeamInvitationResponse(
-            createdInvitation.Id,
-            createdInvitation.TeamId,
-            createdInvitation.InviterId,
-            createdInvitation.InviteeEmail,
-            createdInvitation.IsAccepted,
-            team.Name);
+        return new TeamInvitationResponse(createdInvitations);
     }
 
     public async Task<TeamResponse> AcceptTeamInvitation(string invitationId, string userId)
     {
-        var invitation = await teamAdapter.GetTeamInvitation(invitationId);
+        var invitation = await _teamAdapter.GetTeamInvitation(invitationId);
         if (invitation == null || invitation.IsAccepted) throw new Exception("Invalid invitation");
 
-        await teamAdapter.AddUserToTeam(invitation.TeamId, userId);
-        await teamAdapter.MarkInvitationAsAccepted(invitationId);
+        await _teamAdapter.AddUserToTeam(invitation.TeamId, userId);
+        await _teamAdapter.MarkInvitationAsAccepted(invitationId);
         
-        var team = await teamAdapter.GetTeam(invitation.TeamId) 
+        var team = await _teamAdapter.GetTeam(invitation.TeamId) 
             ?? throw new Exception("Team not found");
             
         // Notify team managers
         foreach (var managerId in team.ManagerIds)
         {
-            var manager = await userAdapter.GetUserProfile(managerId);
+            var manager = await _userAdapter.GetUserProfile(managerId);
             if (manager != null)
             {
                 // In a real system, we'd get the user's details to include in the notification
@@ -64,88 +113,137 @@ public class TeamService(ITeamAdapter teamAdapter, IUserAdapter userAdapter, Not
             }
         }
         
-        return GetTeamResponse(team);
+        var managers = await _userAdapter.GetUsers(team.ManagerIds);
+        var players = await _userAdapter.GetUsers(team.MemberIds);
+        
+        var members = GetTeamMembers(managers, players);        
+        return GetTeamResponse(team, members);
     }
 
     public async Task<TeamResponse> AddManagerToTeam(string teamId, string currentManagerId, string newManagerId)
     {
-        var team = await teamAdapter.GetTeam(teamId);
+        var team = await _teamAdapter.GetTeam(teamId);
         if (team == null) throw new Exception("Team not found");
         if (!team.ManagerIds.Contains(currentManagerId)) throw new Exception("User is not authorized to update team managers");
         
-        await teamAdapter.AddManagerToTeam(teamId, newManagerId);
-        team = await teamAdapter.GetTeam(teamId) ?? throw new Exception("Team not found");
+        await _teamAdapter.AddManagerToTeam(teamId, newManagerId);
+        team = await _teamAdapter.GetTeam(teamId) ?? throw new Exception("Team not found");
         
         // Notify the new manager
         await notificationService.SendNotification(newManagerId, "Team Manager Role", 
             $"You have been made a manager of team: {team.Name}");
-            
-        return GetTeamResponse(team);
+        
+        var managers = await _userAdapter.GetUsers(team.ManagerIds);
+        var players = await _userAdapter.GetUsers(team.MemberIds);
+        
+        var members = GetTeamMembers(managers, players);        
+        return GetTeamResponse(team, members);
     }
     
     public async Task<TeamResponse> RemoveManagerFromTeam(string teamId, string currentManagerId, string managerToRemoveId)
     {
-        var team = await teamAdapter.GetTeam(teamId);
+        var team = await _teamAdapter.GetTeam(teamId);
         if (team == null) throw new Exception("Team not found");
         if (!team.ManagerIds.Contains(currentManagerId)) throw new Exception("User is not authorized to update team managers");
         
         if (team.ManagerIds.Count <= 1)
             throw new Exception("Cannot remove the only manager from the team");
             
-        var success = await teamAdapter.RemoveManagerFromTeam(teamId, managerToRemoveId);
+        var success = await _teamAdapter.RemoveManagerFromTeam(teamId, managerToRemoveId);
         if (!success) throw new Exception("Failed to remove manager role");
         
-        team = await teamAdapter.GetTeam(teamId) ?? throw new Exception("Team not found");
+        team = await _teamAdapter.GetTeam(teamId) ?? throw new Exception("Team not found");
         
         // Notify the removed manager
         await notificationService.SendNotification(managerToRemoveId, "Team Manager Role Removed", 
             $"Your manager role for team {team.Name} has been removed");
-            
-        return GetTeamResponse(team);
+        
+        var managers = await _userAdapter.GetUsers(team.ManagerIds);
+        var players = await _userAdapter.GetUsers(team.MemberIds);
+        
+        var members = GetTeamMembers(managers, players);
+        return GetTeamResponse(team, members);
     }
     
     public async Task<List<TeamResponse>> GetTeamsForUser(string userId)
     {
-        var teams = await teamAdapter.GetTeamsByMember(userId);
-        return teams.Select(GetTeamResponse).ToList();
+        var teams = await _teamAdapter.GetTeamsByMember(userId);
+        var response = new List<TeamResponse>();
+        foreach (var team in teams)
+        {
+            var managers = await _userAdapter.GetUsers(team.ManagerIds);
+            var players = await _userAdapter.GetUsers(team.MemberIds);
+            
+            var members = GetTeamMembers(managers, players);
+            var teamResponse = GetTeamResponse(team, members);
+            response.Add(teamResponse);
+        }
+        
+        return response;
     }
     
     public async Task<List<TeamResponse>> GetManagedTeams(string userId)
     {
-        var teams = await teamAdapter.GetTeamsByManager(userId);
-        return teams.Select(GetTeamResponse).ToList();
+        var teams = await _teamAdapter.GetTeamsByManager(userId);
+        var response = new List<TeamResponse>();
+        foreach (var team in teams)
+        {
+            var managers = await _userAdapter.GetUsers(team.ManagerIds);
+            var players = await _userAdapter.GetUsers(team.MemberIds);
+            
+            var members = GetTeamMembers(managers, players);
+            var teamResponse = GetTeamResponse(team, members);
+            response.Add(teamResponse);
+        }
+        
+        return response;
     }
     
-    public async Task<List<TeamInvitationResponse>> GetPendingInvitations(string email)
+    public async Task<TeamInvitationResponse> GetPendingInvitations(string email)
     {
-        var invitations = await teamAdapter.GetTeamInvitationsByEmail(email);
-        var responses = new List<TeamInvitationResponse>();
-        
-        foreach (var invitation in invitations)
-        {
-            var team = await teamAdapter.GetTeam(invitation.TeamId);
-            if (team != null)
-            {
-                responses.Add(new TeamInvitationResponse(
-                    invitation.Id,
-                    invitation.TeamId,
-                    invitation.InviterId,
-                    invitation.InviteeEmail,
-                    invitation.IsAccepted,
-                    team.Name));
-            }
-        }
+        var invitations = await _teamAdapter.GetTeamInvitationsByEmail(email);
+        var responses = new TeamInvitationResponse(invitations);
         
         return responses;
     }
+
+    private static List<TeamMember> GetTeamMembers(List<UserProfile> managers, List<UserProfile> players)
+    {
+        var teamMembers = managers.ConvertAll(player => 
+            new TeamMember(
+                player.Id,
+                player.FirstName,
+                player.LastName, 
+                player.Email, 
+                TeamRole.Captain, 
+                player.Gender, 
+                player.Avatar
+                )
+        );
+        
+        teamMembers.AddRange(players.ConvertAll(
+            player => new TeamMember(
+                player.Id, 
+                player.FirstName,
+                player.LastName,
+                player.Email,
+                TeamRole.Player,
+                player.Gender,
+                player.Avatar)
+        ));
+
+        return teamMembers;
+    }
     
-    private static TeamResponse GetTeamResponse(Team team)
+    private static TeamResponse GetTeamResponse(Team team, List<TeamMember> members)
     {
         return new TeamResponse(
             team.Id,
             team.Name,
-            team.ManagerIds,
-            team.MemberIds
+            members,
+            team.Sport,
+            team.Description,
+            team.Logo
         );
     }
 }

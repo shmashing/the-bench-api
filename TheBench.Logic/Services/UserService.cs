@@ -12,8 +12,15 @@ public class UserService(IUserAdapter userAdapter, IdService idService)
     public async Task<UserProfileResponse> CreateUserProfile(CreateUserProfileRequest request)
     {
         var id = idService.Generate("user");
-        var schedule = request.Schedule ?? Schedule.FullAvailability();
-        var userProfile = new UserProfile(id, request.UserId, request.Location, request.Gender, request.Sports, schedule);
+        var userProfile = new UserProfile(
+            id, 
+            request.Auth0Id, 
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            request.Gender,
+            request.Avatar
+            );
        
         var createdProfile = await userAdapter.CreateUserProfile(userProfile);
         return GetUserProfileResponse(createdProfile);
@@ -25,26 +32,27 @@ public class UserService(IUserAdapter userAdapter, IdService idService)
         return userProfile == null ? null : GetUserProfileResponse(userProfile);
     }
     
-    public async Task<UserProfileResponse> UpdateAvailability(string userId, List<DailyAvailability> updatedDailyAvailabilities)
+    public async Task<UserProfileResponse?> GetUserProfileByAuthId(string authId)
     {
-        var updatedProfile = await userAdapter.UpdateAvailability(userId, updatedDailyAvailabilities);
-        return GetUserProfileResponse(updatedProfile);
+        var userProfile = await userAdapter.GetUserProfileByAuthId(authId);
+        return userProfile == null ? null : GetUserProfileResponse(userProfile);
+    }
+    
+    public async Task<List<UserProfileResponse>> FindUsers(string searchTerm)
+    {
+        var users = await userAdapter.FindUsers(searchTerm);
+        return users.Select(GetUserProfileResponse).ToList();
     }
 
     private static UserProfileResponse GetUserProfileResponse(UserProfile userProfile)
     {
-        var schedule = userProfile.Schedule.DailyAvailability
-            .ToDictionary(
-                key => $"{key.Day}|{key.TimeWindow}",
-                value => value.Availability
-            );
         return new UserProfileResponse(
             userProfile.Id,
-            userProfile.UserId,
-            userProfile.Location,
-            userProfile.Gender,
-            userProfile.Sports,
-            schedule
+            userProfile.Auth0Id,
+            userProfile.FirstName,
+            userProfile.LastName,
+            userProfile.Email,
+            userProfile.Gender
         );
     }
 }

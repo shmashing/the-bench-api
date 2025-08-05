@@ -1,8 +1,12 @@
+using TheBench.Logic.Models;
+
 namespace TheBench.Logic.Responses;
 
 public record TeamResponse(
     string Id,
     string Name,
-    List<string> ManagerIds,
-    List<string> MemberIds
+    List<TeamMember> Members,
+    Sport Sport,
+    string Description,
+    string? Logo = null
 );

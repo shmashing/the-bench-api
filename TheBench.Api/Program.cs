@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using TheBench.Logic.Adapters;
 using TheBench.Logic.Database;
+using TheBench.Logic.Models;
 using TheBench.Logic.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +18,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", config =>
     {
-        config.WithOrigins("http://localhost:3000", "https://the-bench-ui-185160f67ef3.herokuapp.com")
+        config.WithOrigins("http://localhost:5173", "https://dcb3a8701804.ngrok-free.app", "https://the-bench-ui-185160f67ef3.herokuapp.com")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -26,9 +27,11 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<UserContext>();
 builder.Services.AddScoped<IUserAdapter, UserAdapter>();
 builder.Services.AddScoped<ITeamAdapter, TeamAdapter>();
+builder.Services.AddScoped<IGameAdapter, GameAdapter>();
+builder.Services.AddScoped<ISubstituteRequestAdapter, SubstituteRequestAdapter>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TeamService>();
-builder.Services.AddScoped<SearchService>();
+builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<IdService>();
 

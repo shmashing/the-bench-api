@@ -1,11 +1,11 @@
 namespace TheBench.Logic.Models;
 
-public record UserProfile(
+public record TeamMember(
     string Id,
-    string Auth0Id,
     string FirstName,
     string LastName,
     string Email,
+    TeamRole Role,
     Gender Gender,
-    string? Avatar = null
+    string? Avatar
     );

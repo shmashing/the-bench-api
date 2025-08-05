@@ -4,9 +4,9 @@ namespace TheBench.Logic.Responses;
 
 public record UserProfileResponse(
     string Id,
-    string UserId,
-    string Location,
-    Gender Gender,
-    List<Sport> Sports,
-    Dictionary<string, Availability> Schedule
+    string Auth0Id,
+    string FirstName,
+    string LastName,
+    string Email,
+    Gender Gender
     );
