@@ -1,46 +1,58 @@
+using System.Collections.Specialized;
 using System.Text.Json;
 using TheBench.Logic.Adapters;
 using TheBench.Logic.Models;
+using TheBench.Logic.Requests.V1;
+using TheBench.Logic.Responses;
 
 namespace TheBench.Logic.Services;
 
 public class UserService(IUserAdapter userAdapter, IdService idService)
 {
-    public void InitializeDatabase()
+    public async Task<UserProfileResponse> CreateUserProfile(CreateUserProfileRequest request)
     {
-        userAdapter.SeedDatabase();
+        var id = idService.Generate("user");
+        var userProfile = new UserProfile(
+            id, 
+            request.Auth0Id, 
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            request.Gender,
+            request.Avatar
+            );
+       
+        var createdProfile = await userAdapter.CreateUserProfile(userProfile);
+        return GetUserProfileResponse(createdProfile);
+    }
+
+    public async Task<UserProfileResponse?> GetUserProfile(string userId)
+    {
+        var userProfile = await userAdapter.GetUserProfile(userId);
+        return userProfile == null ? null : GetUserProfileResponse(userProfile);
     }
     
-    public async Task<User?> GetUserById(string userId)
+    public async Task<UserProfileResponse?> GetUserProfileByAuthId(string authId)
     {
-        var user = await userAdapter.GetUser(userId);
-        return user;
+        var userProfile = await userAdapter.GetUserProfileByAuthId(authId);
+        return userProfile == null ? null : GetUserProfileResponse(userProfile);
+    }
+    
+    public async Task<List<UserProfileResponse>> FindUsers(string searchTerm)
+    {
+        var users = await userAdapter.FindUsers(searchTerm);
+        return users.Select(GetUserProfileResponse).ToList();
     }
 
-    public async Task<User> CreateUser(AuthenticatedUser authenticatedUser)
+    private static UserProfileResponse GetUserProfileResponse(UserProfile userProfile)
     {
-        var user = MapAuthenticatedUser(authenticatedUser);
-        var newUser = await userAdapter.CreateUser(user);
-        return newUser;
-    }
-
-    private User MapAuthenticatedUser(AuthenticatedUser authenticatedUser)
-    {
-        var nameParts = authenticatedUser.Name.Split(" ");
-        var firstName = nameParts[0];
-        var lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
-        var newId = idService.Generate("user");
-        var schedule = Schedule.FullAvailability();
-        
-        return new User(
-            firstName,
-            lastName,
-            newId,
-            authenticatedUser.Email,
-            authenticatedUser.PhoneNumber,
-            authenticatedUser.City,
-            schedule,
-            authenticatedUser.Sports
+        return new UserProfileResponse(
+            userProfile.Id,
+            userProfile.Auth0Id,
+            userProfile.FirstName,
+            userProfile.LastName,
+            userProfile.Email,
+            userProfile.Gender
         );
     }
 }

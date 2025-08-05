@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TheBench.Logic.Database;
@@ -11,9 +12,11 @@ using TheBench.Logic.Database;
 namespace TheBench.Logic.Migrations
 {
     [DbContext(typeof(UserContext))]
-    partial class UserContextModelSnapshot : ModelSnapshot
+    [Migration("20250728041916_AddAssociation_ToGameTeamObjects")]
+    partial class AddAssociation_ToGameTeamObjects
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,10 +62,6 @@ namespace TheBench.Logic.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<int>("NumberOfSubs")
                         .HasColumnType("integer");
 
@@ -70,24 +69,15 @@ namespace TheBench.Logic.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
-                    b.Property<int>("Sport")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("TeamId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("TeamName")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TeamId", "GameId")
-                        .IsUnique();
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("TeamId");
 
                     b.ToTable("SubstituteRequests");
                 });
@@ -161,10 +151,6 @@ namespace TheBench.Logic.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("Auth0Id")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Avatar")
                         .HasColumnType("text");
 
@@ -172,29 +158,58 @@ namespace TheBench.Logic.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<int>("Gender")
                         .HasColumnType("integer");
 
-                    b.Property<string>("LastName")
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Schedule")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.PrimitiveCollection<int[]>("Sports")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Auth0Id")
-                        .IsUnique();
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("Id")
+                    b.HasIndex("UserId")
                         .IsUnique();
 
                     b.ToTable("UserProfiles");
+                });
+
+            modelBuilder.Entity("TheBench.Logic.Models.SubstituteRequest", b =>
+                {
+                    b.HasOne("TheBench.Logic.Models.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheBench.Logic.Models.Team", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Team");
                 });
 #pragma warning restore 612, 618
         }

@@ -7,7 +7,11 @@ namespace TheBench.Logic.Database;
 
 public class UserContext : DbContext
 {
-    public DbSet<User> Users { get; set; }
+    public DbSet<UserProfile> UserProfiles { get; set; }
+    public DbSet<Team> Teams { get; set; }
+    public DbSet<TeamInvitation> TeamInvitations { get; set; }
+    public DbSet<Game> Games { get; set; }
+    public DbSet<SubstituteRequest> SubstituteRequests { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -18,13 +22,36 @@ public class UserContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>(u =>
+        modelBuilder.Entity<UserProfile>(u =>
         {
-            u.Property(p => p.Schedule).HasConversion(
-                s => JsonSerializer.Serialize(s, JsonSerializerOptions.Default),
-                s => JsonSerializer.Deserialize<Schedule>(s, JsonSerializerOptions.Default) ?? Schedule.FullAvailability());
+            u.HasIndex(p => p.Id).IsUnique();
+            u.HasIndex(p => p.Auth0Id).IsUnique();
+            u.HasIndex(p => p.Email).IsUnique();
+        });
+        
+        modelBuilder.Entity<Team>(team =>
+        {
+            team.HasKey(t => t.Id);
+            team.Property(t => t.ManagerIds).HasConversion(
+                list => JsonSerializer.Serialize(list, JsonSerializerOptions.Default),
+                json => JsonSerializer.Deserialize<List<string>>(json, JsonSerializerOptions.Default) ?? new List<string>());
+            
+            team.Property(t => t.MemberIds).HasConversion(
+                list => JsonSerializer.Serialize(list, JsonSerializerOptions.Default),
+                json => JsonSerializer.Deserialize<List<string>>(json, JsonSerializerOptions.Default) ?? new List<string>());
+        });
+        
+        modelBuilder.Entity<TeamInvitation>(invite =>
+        {
+            invite.HasKey(i => i.Id);
+            invite.HasIndex(i => new { i.TeamId, i.InviteeEmail }).IsUnique();
         });
 
+        modelBuilder.Entity<SubstituteRequest>(request =>
+        {
+            request.HasKey(r => r.Id);
+            request.HasIndex(r => new { r.TeamId, r.GameId }).IsUnique();
+        });
         
         base.OnModelCreating(modelBuilder);
     }
