@@ -27,7 +27,7 @@ public class TeamAdapter(UserContext teamContext) : ITeamAdapter
     public async Task<List<Team>> GetTeamsByMember(string userId)
     {
         var teams = await teamContext.Teams.ToListAsync();
-        return teams.Where(t => t.ManagerIds.Contains(userId)).ToList();
+        return teams.Where(t => t.ManagerIds.Contains(userId) || t.MemberIds.Contains(userId)).ToList();
     }
 
     public async Task<List<Team>> GetTeamsByManager(string userId)
@@ -46,71 +46,94 @@ public class TeamAdapter(UserContext teamContext) : ITeamAdapter
 
     public async Task<bool> AddUserToTeam(string teamId, string userId)
     {
-        var team = await teamContext.Teams.FindAsync(teamId);
+        Console.WriteLine($"adding user {userId} to team {teamId}");
+        var team = await teamContext.Teams.AsTracking().FirstOrDefaultAsync(t => t.Id == teamId);
         if (team == null) return false;
+        if (team.MemberIds.Contains(userId)) return false;
+
+        Console.WriteLine("Found team, checking membership");
         
-        if (!team.MemberIds.Contains(userId))
-        {
-            team.MemberIds.Add(userId);
-            await teamContext.SaveChangesAsync();
-        }
+        var memberIds = team.MemberIds;
+        memberIds.Add(userId);
+        team.MemberIds = memberIds;
+        teamContext.Entry(team).Property(t => t.MemberIds).IsModified = true;
+        
+        await teamContext.SaveChangesAsync();
+        
+        Console.WriteLine("User added to team!");
         return true;
     }
 
-    public async Task<bool> RemoveUserFromTeam(string teamId, string userId)
+    public async Task<Team> RemoveUserFromTeam(string teamId, string userId)
     {
         var team = await teamContext.Teams.FindAsync(teamId);
-        if (team == null) return false;
+        if (team == null) throw new Exception("Team not found");
+        if (!team.MemberIds.Contains(userId) && !team.ManagerIds.Contains(userId)) 
+            throw new Exception("User is not a member of the team");
+
+        var members = team.MemberIds;
+        members.Remove(userId);
         
-        if (team.MemberIds.Contains(userId))
-        {
-            team.MemberIds.Remove(userId);
-            // Also remove user from managers if they were a manager
-            if (team.ManagerIds.Contains(userId))
-            {
-                team.ManagerIds.Remove(userId);
-            }
-            await teamContext.SaveChangesAsync();
-        }
-        return true;
+        var managers = team.ManagerIds;
+        managers.Remove(userId);
+        
+        team.MemberIds = members;
+        team.ManagerIds = managers;
+        teamContext.Entry(team).Property(t => t.MemberIds).IsModified = true;
+        teamContext.Entry(team).Property(t => t.ManagerIds).IsModified = true;
+
+        await teamContext.SaveChangesAsync();
+        
+        return team;
     }
 
-    public async Task<bool> AddManagerToTeam(string teamId, string userId)
+    public async Task<Team> AddManagerToTeam(string teamId, string managerId, string userId)
     {
         var team = await teamContext.Teams.FindAsync(teamId);
-        if (team == null) return false;
+        if (team == null) throw new Exception("Team not found");
+        if (!team.ManagerIds.Contains(managerId)) throw new Exception("Only a manager can promote a member to manager");
+        if (team.ManagerIds.Contains(userId)) return team;
+        if (!team.MemberIds.Contains(userId)) throw new Exception("User must be a member of the team to be promoted to manager");
         
-        // Ensure user is a member first
-        if (!team.MemberIds.Contains(userId))
-        {
-            team.MemberIds.Add(userId);
-        }
+        var managers = team.ManagerIds;
+        managers.Add(userId);
         
-        if (!team.ManagerIds.Contains(userId))
-        {
-            team.ManagerIds.Add(userId);
-            await teamContext.SaveChangesAsync();
-        }
-        return true;
+        var members = team.MemberIds;
+        members.Remove(userId);
+        
+        team.MemberIds = members;
+        team.ManagerIds = managers;
+        teamContext.Entry(team).Property(t => t.MemberIds).IsModified = true;
+        teamContext.Entry(team).Property(t => t.ManagerIds).IsModified = true;
+
+        await teamContext.SaveChangesAsync();
+        
+        return team;
     }
 
-    public async Task<bool> RemoveManagerFromTeam(string teamId, string userId)
+    public async Task<Team> DemoteManagerToPlayer(string teamId, string managerId, string userId)
     {
         var team = await teamContext.Teams.FindAsync(teamId);
-        if (team == null) return false;
+        if (team == null) throw new Exception("Team not found");
+        if (!team.ManagerIds.Contains(managerId)) throw new Exception("Only a manager can demote a manager to player");
+        if (!team.ManagerIds.Contains(userId)) return team;
+        if (managerId == userId) throw new Exception("A manager cannot demote themselves to player");
+        if (team.ManagerIds.Count <= 1) throw new Exception("Cannot demote the last manager of the team");
+        if (team.MemberIds.Contains(userId)) return team;
         
-        if (team.ManagerIds.Contains(userId))
-        {
-            // Don't remove the last manager
-            if (team.ManagerIds.Count <= 1)
-            {
-                return false;
-            }
-            
-            team.ManagerIds.Remove(userId);
-            await teamContext.SaveChangesAsync();
-        }
-        return true;
+        var members = team.MemberIds;
+        members.Add(userId);
+        
+        var managers = team.ManagerIds;
+        managers.Remove(userId);
+        
+        team.MemberIds = members;
+        team.ManagerIds = managers;
+        teamContext.Entry(team).Property(t => t.MemberIds).IsModified = true;
+        teamContext.Entry(team).Property(t => t.ManagerIds).IsModified = true;
+        await teamContext.SaveChangesAsync();
+        
+        return team;
     }
 
     public async Task<List<TeamInvitation>> CreateTeamInvitations(List<TeamInvitation> invitations)
@@ -129,23 +152,36 @@ public class TeamAdapter(UserContext teamContext) : ITeamAdapter
     public async Task<List<TeamInvitation>> GetTeamInvitationsByTeam(string teamId)
     {
         return await teamContext.TeamInvitations
-            .Where(i => i.TeamId == teamId && !i.IsAccepted)
+            .Where(i => i.TeamId == teamId && i.Status == InvitationStatus.Pending)
             .ToListAsync();
     }
 
-    public async Task<List<TeamInvitation>> GetTeamInvitationsByEmail(string email)
+    public async Task<List<TeamInvitation>> GetTeamInvitationsByEmail(string email, string? status = null)
+    {
+        if (status == null)
+        {
+            return await teamContext.TeamInvitations
+                .Where(i => i.InviteeEmail == email)
+                .ToListAsync();
+        }
+        
+        return await teamContext.TeamInvitations
+            .Where(i => i.InviteeEmail == email && i.Status.ToString() == status)
+            .ToListAsync();
+    }
+    
+    public async Task<bool> UserHasOpenInviteForTeam(string teamId, string email)
     {
         return await teamContext.TeamInvitations
-            .Where(i => i.InviteeEmail == email && !i.IsAccepted)
-            .ToListAsync();
+            .AnyAsync(i => i.TeamId == teamId && i.InviteeEmail == email && i.Status == InvitationStatus.Pending);
     }
 
-    public async Task<bool> MarkInvitationAsAccepted(string invitationId)
+    public async Task<bool> UpdateInvitationStatus(string invitationId, InvitationStatus newStatus)
     {
         var invitation = await teamContext.TeamInvitations.FindAsync(invitationId);
         if (invitation == null) return false;
         
-        invitation.MarkAccepted();
+        invitation.SetStatus(newStatus);
         await teamContext.SaveChangesAsync();
         return true;
     }

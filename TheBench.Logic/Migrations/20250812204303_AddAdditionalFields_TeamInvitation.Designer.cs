@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TheBench.Logic.Database;
@@ -11,9 +12,11 @@ using TheBench.Logic.Database;
 namespace TheBench.Logic.Migrations
 {
     [DbContext(typeof(UserContext))]
-    partial class UserContextModelSnapshot : ModelSnapshot
+    [Migration("20250812204303_AddAdditionalFields_TeamInvitation")]
+    partial class AddAdditionalFields_TeamInvitation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -133,12 +136,6 @@ namespace TheBench.Logic.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("InviteeEmail")
                         .IsRequired()
                         .HasColumnType("text");
@@ -155,8 +152,8 @@ namespace TheBench.Logic.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<bool>("IsAccepted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("TeamId")
                         .IsRequired()
@@ -168,7 +165,8 @@ namespace TheBench.Logic.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TeamId", "InviteeEmail", "Status");
+                    b.HasIndex("TeamId", "InviteeEmail")
+                        .IsUnique();
 
                     b.ToTable("TeamInvitations");
                 });

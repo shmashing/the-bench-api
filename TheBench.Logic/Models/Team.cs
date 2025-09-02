@@ -8,5 +8,8 @@ public record Team(
     List<string> MemberIds,
     Sport Sport,
     string Description,
-    string? Logo = null
-    );
+    string? Logo = null)
+{
+    public List<string> ManagerIds { get; set; } = ManagerIds;
+    public List<string> MemberIds { get; set; } = MemberIds;
+}

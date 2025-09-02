@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using TheBench.Logic.Adapters;
+using TheBench.Logic.Config;
 using TheBench.Logic.Database;
 using TheBench.Logic.Models;
 using TheBench.Logic.Services;
@@ -24,10 +25,26 @@ builder.Services.AddCors(options =>
     });
 });
 
+var apiConfiguration = builder.Configuration.GetSection("ApiConfiguration").Get<ApiConfiguration>();
+if (apiConfiguration == null)
+{
+    throw new InvalidOperationException("API configuration is missing or invalid.");
+}
+
+var mailGunConfig = builder.Configuration.GetSection("MailGunConfig").Get<MailGunConfiguration>();
+if (mailGunConfig == null)
+{
+    throw new InvalidOperationException("MailGun configuration is missing or invalid.");
+}
+mailGunConfig.SetApiKey(Environment.GetEnvironmentVariable("MAILGUN_API_KEY")!);
+
+builder.Services.AddSingleton(apiConfiguration);
+builder.Services.AddSingleton(mailGunConfig);
 builder.Services.AddDbContext<UserContext>();
 builder.Services.AddScoped<IUserAdapter, UserAdapter>();
 builder.Services.AddScoped<ITeamAdapter, TeamAdapter>();
 builder.Services.AddScoped<IGameAdapter, GameAdapter>();
+builder.Services.AddScoped<INotificationAdapter, NotificationAdapter>();
 builder.Services.AddScoped<ISubstituteRequestAdapter, SubstituteRequestAdapter>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TeamService>();
