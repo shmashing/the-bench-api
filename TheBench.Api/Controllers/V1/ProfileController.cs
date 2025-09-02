@@ -109,4 +109,20 @@ public class ProfileController(
             return StatusCode(500, ex.Message);
         }
     }
+    
+    [HttpGet("{userId}/invitations")]
+    public async Task<IActionResult> GetUserInvitations(string userId, [FromQuery] string? status)
+    {
+        try
+        {
+            var teamInvites = await teamService.GetUserTeamInvitations(userId, status);
+            
+            return Ok(teamInvites);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting user games: {ex.Message}\n{ex.StackTrace}");
+            return StatusCode(500, ex.Message);
+        }
+    }
 }

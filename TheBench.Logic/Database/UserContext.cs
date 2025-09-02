@@ -44,7 +44,7 @@ public class UserContext : DbContext
         modelBuilder.Entity<TeamInvitation>(invite =>
         {
             invite.HasKey(i => i.Id);
-            invite.HasIndex(i => new { i.TeamId, i.InviteeEmail }).IsUnique();
+            invite.HasIndex(i => new { i.TeamId, i.InviteeEmail, i.Status });
         });
 
         modelBuilder.Entity<SubstituteRequest>(request =>

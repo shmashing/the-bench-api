@@ -1,9 +1,10 @@
+using TheBench.Logic.Adapters;
 using TheBench.Logic.Models;
 using TheBench.Logic.Responses;
 
 namespace TheBench.Logic.Services;
 
-public class NotificationService
+public class NotificationService(INotificationAdapter notificationAdapter)
 {
     public Task SendEmail(string email, string subject, string message)
     {
@@ -19,10 +20,15 @@ public class NotificationService
         return Task.CompletedTask;
     }
 
-    public Task SendTeamInvites(List<TeamInvitation> invites)
+    public async Task SendTeamInvites(List<TeamInvitation> invites)
     {
-        Console.WriteLine($"Sending team invites for {invites.Count} users");
-        return Task.CompletedTask;
+        foreach (var invite in invites)
+        {
+            var result = await notificationAdapter.SendTeamInvite(invite);
+            if (result) continue;
+            
+            Console.WriteLine($"Failed to send invite to {invite.InviteeEmail}");
+        }
     }
     
     public Task SendNewGameNotification(TeamMember organizer, TeamResponse team, Game game)

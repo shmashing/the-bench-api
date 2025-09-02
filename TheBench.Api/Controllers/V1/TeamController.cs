@@ -80,21 +80,6 @@ public class TeamController(TeamService teamService, GameService gameService) : 
         }
     }
     
-    [HttpPost("{teamId}/invite")]
-    public async Task<IActionResult> InviteToTeam(string teamId, [FromBody] TeamInvitationRequest request)
-    {
-        try
-        {
-            var invitation = await teamService.InviteUsersToTeam(teamId, request.InviterId, request.UserEmails);
-            return Ok(invitation);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.InnerException.Message);
-            return StatusCode(500, ex.Message);
-        }
-    }
-
     [HttpGet("{teamId}/games")]
     public async Task<IActionResult> GetGamesForTeam(string teamId)
     {
@@ -116,12 +101,51 @@ public class TeamController(TeamService teamService, GameService gameService) : 
         }
     }
     
-    [HttpPost("invitation/{invitationId}/accept")]
-    public async Task<IActionResult> AcceptInvitation(string invitationId, [FromQuery] string userId)
+    [HttpPost("{teamId}/invite")]
+    public async Task<IActionResult> InviteToTeam(string teamId, [FromBody] TeamInvitationRequest request)
+    {
+        Console.WriteLine($"Received invite request: {request}");
+        try
+        {
+            var invitation = await teamService.InviteUsersToTeam(teamId, request.InviterId, request.UserEmails);
+            return Ok(invitation);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error inviting users to team: " + ex.Message);
+            return StatusCode(500, ex.Message);
+        }
+    }
+    
+    [HttpGet("{teamId}/invitations/{invitationId}")]
+    public async Task<IActionResult> GetTeamInvitation(string teamId, string invitationId)
     {
         try
         {
-            var team = await teamService.AcceptTeamInvitation(invitationId, userId);
+            var invitation = await teamService.GetTeamInvitation(teamId, invitationId);
+            return Ok(invitation);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error retrieving team invitation: " + ex.Message);
+            return StatusCode(500, ex.Message);
+        }
+    }
+    
+    [HttpPost("{teamId}/invitations/{invitationId}/accept")]
+    public async Task<IActionResult> AcceptInvitation(string teamId, string invitationId, [FromQuery] string userId)
+    {
+        Console.WriteLine("Received accept invitation request for user: " + userId);
+
+        if (userId.Trim() == "")
+        {
+            return BadRequest("User ID is required");
+        }
+        
+        
+        try
+        {
+            var team = await teamService.AcceptTeamInvitation(teamId, invitationId, userId);
             return Ok(team);
         }
         catch (Exception ex)
@@ -130,12 +154,19 @@ public class TeamController(TeamService teamService, GameService gameService) : 
         }
     }
     
-    [HttpPost("{teamId}/managers/add")]
-    public async Task<IActionResult> AddManager(string teamId, [FromQuery] string currentManagerId, [FromQuery] string newManagerId)
+    [HttpPost("{teamId}/invitations/{invitationId}/decline")]
+    public async Task<IActionResult> DeclineInvitation(string teamId, string invitationId, [FromQuery] string userId)
     {
+        if (userId.Trim() == "")
+        {
+            return BadRequest("User ID is required");
+        }
+        
+        Console.WriteLine("Recieved decline invitation request for user: " + userId + $" ({invitationId})");
+        
         try
         {
-            var team = await teamService.AddManagerToTeam(teamId, currentManagerId, newManagerId);
+            var team = await teamService.DeclineTeamInvitation(teamId, invitationId, userId);
             return Ok(team);
         }
         catch (Exception ex)
@@ -144,12 +175,40 @@ public class TeamController(TeamService teamService, GameService gameService) : 
         }
     }
     
-    [HttpPost("{teamId}/managers/remove")]
-    public async Task<IActionResult> RemoveManager(string teamId, [FromQuery] string currentManagerId, [FromQuery] string managerToRemoveId)
+    [HttpPost("{teamId}/managers/add/{memberId}")]
+    public async Task<IActionResult> AddManager(string teamId, [FromQuery] string managerId, string memberId)
     {
         try
         {
-            var team = await teamService.RemoveManagerFromTeam(teamId, currentManagerId, managerToRemoveId);
+            var team = await teamService.AddManagerToTeam(teamId, managerId, memberId);
+            return Ok(team);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
+    
+    [HttpPost("{teamId}/managers/remove/{memberId}")]
+    public async Task<IActionResult> DemoteManagerToPlayer(string teamId, [FromQuery] string managerId,  string memberId)
+    {
+        try
+        {
+            var team = await teamService.DemoteManagerToPlayer(teamId, managerId, memberId);
+            return Ok(team);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
+    
+    [HttpDelete("{teamId}/members/{memberId}")]
+    public async Task<IActionResult> RemoveTeamMember(string teamId, [FromQuery] string managerId, string memberId)
+    {
+        try
+        {
+            var team = await teamService.RemoveMemberFromTeam(teamId, managerId, memberId);
             return Ok(team);
         }
         catch (Exception ex)
