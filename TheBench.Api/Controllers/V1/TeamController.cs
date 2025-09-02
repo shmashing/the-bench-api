@@ -14,7 +14,6 @@ public class TeamController(TeamService teamService, GameService gameService) : 
     {
         try
         {
-            Console.WriteLine(request.Sport.ToString());
             var team = await teamService.CreateTeam(
                 request.ManagerId, 
                 request.TeamName,
@@ -104,7 +103,6 @@ public class TeamController(TeamService teamService, GameService gameService) : 
     [HttpPost("{teamId}/invite")]
     public async Task<IActionResult> InviteToTeam(string teamId, [FromBody] TeamInvitationRequest request)
     {
-        Console.WriteLine($"Received invite request: {request}");
         try
         {
             var invitation = await teamService.InviteUsersToTeam(teamId, request.InviterId, request.UserEmails);
@@ -135,13 +133,10 @@ public class TeamController(TeamService teamService, GameService gameService) : 
     [HttpPost("{teamId}/invitations/{invitationId}/accept")]
     public async Task<IActionResult> AcceptInvitation(string teamId, string invitationId, [FromQuery] string userId)
     {
-        Console.WriteLine("Received accept invitation request for user: " + userId);
-
         if (userId.Trim() == "")
         {
             return BadRequest("User ID is required");
         }
-        
         
         try
         {
@@ -161,8 +156,6 @@ public class TeamController(TeamService teamService, GameService gameService) : 
         {
             return BadRequest("User ID is required");
         }
-        
-        Console.WriteLine("Recieved decline invitation request for user: " + userId + $" ({invitationId})");
         
         try
         {
