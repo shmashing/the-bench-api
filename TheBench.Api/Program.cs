@@ -18,7 +18,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", config =>
     {
-        config.WithOrigins("http://localhost:5173", "https://dcb3a8701804.ngrok-free.app", "https://the-bench-ui-185160f67ef3.herokuapp.com")
+        config.WithOrigins(
+                "http://localhost:5173", 
+                "https://dcb3a8701804.ngrok-free.app", 
+                "https://the-bench-ui-185160f67ef3.herokuapp.com",
+                "https://staging.the-bench.us",
+                "https://www.the-bench.us"
+                )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
