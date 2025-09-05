@@ -4,5 +4,11 @@ public enum Sport
 {
     Softball,
     Kickball,
-    Pickleball
+    Pickleball,
+    Soccer,
+    Basketball,
+    Baseball,
+    Volleyball,
+    Football,
+    Other
 }
