@@ -58,7 +58,6 @@ app.UseCors("AllowFrontend");
 app.MapControllers();
 
 app.Run();
-return;
 
 static ApiConfiguration LoadConfiguration(WebApplicationBuilder builder)
 {
