@@ -29,21 +29,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-var apiConfiguration = builder.Configuration.GetSection("ApiConfiguration").Get<ApiConfiguration>();
-if (apiConfiguration == null)
-{
-    throw new InvalidOperationException("API configuration is missing or invalid.");
-}
+var serviceConfiguration = LoadConfiguration(builder);
 
-var mailGunConfig = builder.Configuration.GetSection("MailGunConfig").Get<MailGunConfiguration>();
-if (mailGunConfig == null)
-{
-    throw new InvalidOperationException("MailGun configuration is missing or invalid.");
-}
-mailGunConfig.SetApiKey(Environment.GetEnvironmentVariable("MAILGUN_API_KEY")!);
-
-builder.Services.AddSingleton(apiConfiguration);
-builder.Services.AddSingleton(mailGunConfig);
+builder.Services.AddSingleton(serviceConfiguration);
+builder.Services.AddSingleton(serviceConfiguration.MailGunConfiguration);
 builder.Services.AddDbContext<UserContext>();
 builder.Services.AddScoped<IUserAdapter, UserAdapter>();
 builder.Services.AddScoped<ITeamAdapter, TeamAdapter>();
@@ -69,3 +58,36 @@ app.UseCors("AllowFrontend");
 app.MapControllers();
 
 app.Run();
+
+static ApiConfiguration LoadConfiguration(WebApplicationBuilder builder)
+{
+    var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+    if (env == "Development")
+    {
+        Console.WriteLine("Loading configuration from appsettings.json");
+        var config = builder.Configuration.GetSection("ApiConfiguration").Get<ApiConfiguration>() 
+               ?? throw new InvalidOperationException("API configuration is missing or invalid.");
+        Console.WriteLine($"Config: {config}");
+        return config;
+    }
+    
+    var baseUiUri = Environment.GetEnvironmentVariable("BASE_UI_URI") 
+                    ?? throw new InvalidOperationException("Base UI URL is not set in environment variables.");
+    var databaseConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                                   ?? throw new InvalidOperationException("Database connection string is not set in environment variables.");
+    var mailgunBaseUri = Environment.GetEnvironmentVariable("MAILGUN_BASE_URI") 
+                         ?? throw new InvalidOperationException("Mailgun base URI is not set in environment variables.");
+    var mailgunDomain = Environment.GetEnvironmentVariable("MAILGUN_DOMAIN") 
+                        ?? throw new InvalidOperationException("Mailgun domain is not set in environment variables.");
+    var mailgunApiKey = Environment.GetEnvironmentVariable("MAILGUN_API_KEY") 
+                        ?? throw new InvalidOperationException("Mailgun API key is not set in environment variables.");
+    
+    var mailGunConfig = new MailGunConfiguration
+    {
+        BaseUri = mailgunBaseUri,
+        Domain = mailgunDomain,
+        ApiKey = mailgunApiKey
+    };
+    
+    return new ApiConfiguration(baseUiUri,databaseConnectionString,mailGunConfig);
+}
